@@ -1,0 +1,444 @@
+SQL QUERIES
+
+con.sql("PRAGMA table_info('flights');").df()
+
+con.sql("""
+SELECT COUNT(*) AS total_flights
+FROM flights;
+""").df()
+
+con.sql("""
+SELECT COUNT(DISTINCT carrier_name) AS total_airlines
+FROM flights;
+""").df()
+
+con.sql("""
+SELECT COUNT(DISTINCT departing_airport) AS total_airports
+FROM flights;
+""").df()
+
+con.sql('SELECT month, COUNT(*) AS total_flights FROM flights GROUP BY month ORDER BY month;').df()
+
+con.sql("""
+SELECT
+    carrier_name,
+    COUNT(*) AS total_flights
+FROM flights
+GROUP BY carrier_name
+ORDER BY total_flights DESC;
+""").df()
+
+con.sql("""
+SELECT
+    dep_time_blk,
+    COUNT(*) AS total_flights
+FROM flights
+GROUP BY dep_time_blk
+ORDER BY dep_time_blk;
+""").df()
+
+con.sql("""
+SELECT
+ROUND(AVG(dep_del15)*100,2) AS delay_percentage
+FROM flights;
+""").df()
+
+con.sql("""
+SELECT
+    carrier_name,
+    ROUND(AVG(dep_del15)*100,2) AS delay_percentage
+FROM flights
+GROUP BY carrier_name
+ORDER BY delay_percentage DESC;
+""").df()
+
+con.sql("""
+SELECT
+    month,
+    ROUND(AVG(dep_del15)*100,2) AS delay_percentage
+FROM flights
+GROUP BY month
+ORDER BY month;
+""").df()
+
+con.sql("""
+SELECT
+CASE
+WHEN prcp=0 THEN 'No Rain'
+ELSE 'Rain'
+END AS rainfall_status,
+ROUND(AVG(dep_del15)*100,2) AS delay_percentage
+FROM flights
+GROUP BY rainfall_status;
+""").df()
+
+con.sql("""
+SELECT
+CASE
+WHEN snow=0 THEN 'No Snow'
+ELSE 'Snow'
+END AS snow_status,
+ROUND(AVG(dep_del15)*100,2) AS delay_percentage
+FROM flights
+GROUP BY snow_status;
+""").df()
+
+
+con.sql("""
+SELECT
+carrier_name,
+ROUND(AVG(dep_del15)*100,2) AS delay_percentage,
+RANK() OVER(
+ORDER BY AVG(dep_del15) DESC
+) AS delay_rank
+FROM flights
+GROUP BY carrier_name;
+""").df()
+
+con.sql("""
+WITH airport_traffic AS
+(
+SELECT
+departing_airport,
+COUNT(*) AS total_flights
+FROM flights
+GROUP BY departing_airport
+)
+
+SELECT *
+FROM airport_traffic
+ORDER BY total_flights DESC
+LIMIT 10;
+""").df()
+
+con.sql("""
+SELECT
+    carrier_name,
+    COUNT(*) AS total_flights
+FROM flights
+GROUP BY carrier_name
+HAVING COUNT(*) > 50000
+ORDER BY total_flights DESC;
+""").df()
+
+con.sql("""
+SELECT
+    departing_airport,
+    COUNT(*) AS total_flights
+FROM flights
+GROUP BY departing_airport
+HAVING COUNT(*) > 20000
+ORDER BY total_flights DESC;
+""").df()
+
+con.sql("""
+SELECT
+    departing_airport,
+    ROUND(AVG(plane_age),2) AS avg_plane_age
+FROM flights
+GROUP BY departing_airport
+ORDER BY avg_plane_age DESC;
+""").df()
+
+con.sql("""
+SELECT
+    carrier_name,
+    ROUND(AVG(number_of_seats),0) AS avg_seats
+FROM flights
+GROUP BY carrier_name
+ORDER BY avg_seats DESC;
+""").df()
+
+
+con.sql("""
+SELECT
+    departing_airport,
+    MAX(concurrent_flights) AS peak_concurrent_flights
+FROM flights
+GROUP BY departing_airport
+ORDER BY peak_concurrent_flights DESC
+LIMIT 10;
+""").df()
+
+con.sql("""
+SELECT
+CASE
+WHEN plane_age < 10 THEN 'New'
+WHEN plane_age BETWEEN 10 AND 20 THEN 'Medium'
+ELSE 'Old'
+END AS aircraft_category,
+COUNT(*) AS total_flights
+FROM flights
+GROUP BY aircraft_category;
+""").df()
+
+
+con.sql("""
+SELECT
+CASE
+WHEN distance_group <= 3 THEN 'Short Haul'
+WHEN distance_group <= 7 THEN 'Medium Haul'
+ELSE 'Long Haul'
+END AS flight_type,
+COUNT(*) AS total_flights
+FROM flights
+GROUP BY flight_type;
+""").df()
+
+
+con.sql("""
+SELECT
+CASE
+WHEN CAST(REPLACE(awnd, '"', '') AS DOUBLE) < 5 THEN 'Low Wind'
+WHEN CAST(REPLACE(awnd, '"', '') AS DOUBLE) < 10 THEN 'Moderate Wind'
+ELSE 'High Wind'
+END AS wind_category,
+ROUND(AVG(dep_del15)*100,2) AS delay_rate
+FROM flights
+GROUP BY wind_category;
+""").df()
+
+con.sql("""
+SELECT
+CASE
+WHEN tmax < 10 THEN 'Cold'
+WHEN tmax < 25 THEN 'Moderate'
+ELSE 'Hot'
+END AS temperature_category,
+COUNT(*) AS total_flights
+FROM flights
+GROUP BY temperature_category;
+""").df()
+
+con.sql("""
+SELECT
+CASE
+WHEN dep_del15 = 1 THEN 'Delayed'
+ELSE 'On Time'
+END AS flight_status,
+COUNT(*) AS total_flights
+FROM flights
+GROUP BY flight_status;
+""").df()
+
+con.sql("""
+SELECT *
+FROM flights
+WHERE plane_age >
+(
+SELECT AVG(plane_age)
+FROM flights
+);
+""").df()
+
+con.sql("""
+SELECT
+carrier_name,
+COUNT(*) AS total_flights
+FROM flights
+GROUP BY carrier_name
+HAVING COUNT(*) >
+(
+SELECT AVG(cnt)
+FROM
+(
+SELECT COUNT(*) AS cnt
+FROM flights
+GROUP BY carrier_name
+)
+);
+""").df()
+
+con.sql("""
+SELECT *
+FROM flights
+WHERE concurrent_flights =
+(
+SELECT MAX(concurrent_flights)
+FROM flights
+);
+""").df()
+
+con.sql("""
+SELECT
+departing_airport,
+AVG(number_of_seats) AS avg_seats
+FROM flights
+GROUP BY departing_airport
+HAVING AVG(number_of_seats) >
+(
+SELECT AVG(number_of_seats)
+FROM flights
+);
+""").df()
+
+
+con.sql("""
+SELECT
+carrier_name,
+AVG(dep_del15) AS delay_rate
+FROM flights
+GROUP BY carrier_name
+HAVING AVG(dep_del15) >
+(
+SELECT AVG(dep_del15)
+FROM flights
+);
+""").df()
+
+con.sql("""
+SELECT
+carrier_name,
+COUNT(*) AS total_flights,
+ROW_NUMBER() OVER(ORDER BY COUNT(*) DESC) AS row_num
+FROM flights
+GROUP BY carrier_name;
+""").df()
+
+con.sql("""
+SELECT
+carrier_name,
+COUNT(*) AS total_flights,
+RANK() OVER(ORDER BY COUNT(*) DESC) AS ranking
+FROM flights
+GROUP BY carrier_name;
+""").df()
+
+con.sql("""
+SELECT
+carrier_name,
+COUNT(*) AS total_flights,
+DENSE_RANK() OVER(ORDER BY COUNT(*) DESC) AS dense_rank
+FROM flights
+GROUP BY carrier_name;
+""").df(
+
+con.sql("""
+SELECT
+month,
+COUNT(*) AS flights,
+SUM(COUNT(*)) OVER(ORDER BY month) AS running_total
+FROM flights
+GROUP BY month;
+""").df()
+
+con.sql("""
+SELECT
+month,
+COUNT(*) AS flights,
+LAG(COUNT(*)) OVER(ORDER BY month) AS previous_month
+FROM flights
+GROUP BY month;
+""").df()
+
+con.sql("""
+SELECT
+month,
+COUNT(*) AS flights,
+LEAD(COUNT(*)) OVER(ORDER BY month) AS next_month
+FROM flights
+GROUP BY month;
+""").df()
+
+
+con.sql("""
+WITH monthly_delay AS
+(
+SELECT
+month,
+AVG(dep_del15) AS delay_rate
+FROM flights
+GROUP BY month
+)
+SELECT *
+FROM monthly_delay
+ORDER BY delay_rate DESC;
+""").df()
+
+con.sql("""
+WITH airport_traffic AS
+(
+SELECT
+departing_airport,
+COUNT(*) AS flights
+FROM flights
+GROUP BY departing_airport
+)
+SELECT *
+FROM airport_traffic
+WHERE flights > 10000;
+""").df()
+
+con.sql("""
+WITH airline_stats AS
+(
+SELECT
+carrier_name,
+AVG(number_of_seats) AS avg_seats
+FROM flights
+GROUP BY carrier_name
+)
+SELECT *
+FROM airline_stats
+ORDER BY avg_seats DESC;
+""").df()
+
+
+con.sql("""
+WITH delays AS
+(
+SELECT
+carrier_name,
+AVG(dep_del15) AS delay_rate
+FROM flights
+GROUP BY carrier_name
+)
+SELECT *
+FROM delays
+ORDER BY delay_rate DESC;
+""").df()
+
+con.sql("""
+SELECT
+carrier_name,
+AVG(concurrent_flights) AS avg_traffic
+FROM flights
+GROUP BY carrier_name
+ORDER BY avg_traffic DESC;
+""").df()
+
+con.sql("""
+SELECT
+month,
+AVG(plane_age) AS avg_plane_age
+FROM flights
+GROUP BY month;
+""").df()
+
+con.sql("""
+SELECT
+carrier_name,
+MAX(number_of_seats) AS maximum_seats
+FROM flights
+GROUP BY carrier_name;
+""").df()
+
+con.sql("""
+SELECT
+departing_airport,
+AVG(prcp) AS average_rainfall
+FROM flights
+GROUP BY departing_airport
+ORDER BY average_rainfall DESC
+LIMIT 10;
+""").df()
+
+con.sql("""
+SELECT
+carrier_name,
+AVG(CAST(REPLACE(awnd, '"', '') AS DOUBLE)) AS average_wind_speed
+FROM flights
+GROUP BY carrier_name
+ORDER BY average_wind_speed DESC;
+""").df()
+
